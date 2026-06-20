@@ -11,7 +11,7 @@ router.get('/:userId', async (req, res) => {
         const orders = await Order.find({ userId }).exec();
 
         if (!orders || orders.length === 0) {
-            return res.status(404).json({ message: 'No orders found for this user' });
+            return res.status(200).json([]);
         }
 
         // Format the response to only include the required fields

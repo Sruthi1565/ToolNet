@@ -8,15 +8,26 @@ const OrderSchema = new Schema({
     ref: 'User',
     required: true,
   },
+  renterEmail: {
+    type: String,
+    required: true,
+  },
   cartItems: [
     {
       toolId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tool', required: true },
+      ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
       toolName: { type: String, required: true }, // storing name for quick access
       rentalDays: { type: Number, required: true },
       cost: { type: Number, required: true },
       toolImage:{type:String},
       rentalPrice:{type: Number, required: true},
-      rentedAt:{type:Date}
+      rentedAt:{type:Date},
+      requestStatus: {
+        type: String,
+        enum: ['requested', 'accepted', 'declined', 'completed'],
+        default: 'requested',
+      },
+      ownerResponseAt: { type: Date },
     }
   ],
   address: {
@@ -27,7 +38,11 @@ const OrderSchema = new Schema({
     type: Number,
     required: true,
   },
-  status: { type: String, default: 'active' },
+  status: {
+    type: String,
+    enum: ['requested', 'active', 'declined', 'completed'],
+    default: 'requested',
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -36,9 +51,10 @@ const OrderSchema = new Schema({
 });
 
 OrderSchema.pre('save', function(next) {
-  if (this.isNew) {
+  if (this.isNew && !this.rentalEndDate && this.cartItems.length > 0) {
       this.rentalEndDate = new Date(this.createdAt);
-      this.rentalEndDate.setDate(this.rentalEndDate.getDate() + this.cartItems[0].rentalDays);
+      const rentalDays = Math.max(...this.cartItems.map((item) => item.rentalDays));
+      this.rentalEndDate.setDate(this.rentalEndDate.getDate() + rentalDays);
   }
   next();
 });

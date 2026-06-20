@@ -1,104 +1,110 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import backgroundImage from './bg3.jpg';
-import { useNavigate } from 'react-router-dom';
 import { UserContext } from './UserContext';
 import imag from '../components/profile.jpg';
 import API_BASE_URL from '../config/api';
 
 const Login = () => {
-    const [credentials, setCredentials] = useState({ email: "", password: "" });
-    const { login } = useContext(UserContext);
-    let navigate = useNavigate();
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useContext(UserContext);
+  const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        const response = await fetch(`${API_BASE_URL}/api/loginuser`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email: credentials.email, password: credentials.password })
-        });
-        const json = await response.json();
-        console.log(json);
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
 
-        if (!json.success) {
-            alert("Enter valid credentials");
-            return; // Exit if login fails
-        }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/loginuser`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
 
-        if (json.success) {
-            localStorage.setItem("authToken", json.authToken);
-            console.log(localStorage.getItem("authToken"));
-            console.log("userid:" + json.userId);
-            console.log("Name:", json.name);
-            // Set default profile image if not available in response
-            const { name, latitude, longitude, profileImage } = json;
-            console.log("PROFILE"+profileImage);
-            const defaultProfileImage = profileImage || imag; // Set your default image path here
+      const json = await response.json();
 
-            login(json.userId, credentials.email, name, defaultProfileImage, latitude, longitude); // Pass profile image here
-            navigate("/home");
-        }
+      if (!response.ok || !json.success) {
+        throw new Error(json.errors || 'Enter valid credentials.');
+      }
+
+      localStorage.setItem('authToken', json.authToken);
+      const { name, latitude, longitude, profileImage } = json;
+      login(json.userId, credentials.email, name, profileImage || imag, latitude, longitude);
+      navigate('/home');
+    } catch (err) {
+      setError(err.message || 'Unable to login. Please try again.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const onChange = (event) => {
-        setCredentials({ ...credentials, [event.target.name]: event.target.value });
-    }
+  const onChange = (event) => {
+    setCredentials({ ...credentials, [event.target.name]: event.target.value });
+  };
 
-    return (
-        <div style={{
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            height: '100vh',
-            width: '100%',
-        }}>
-            <div className="vh-100 d-flex justify-content-center align-items-center">
-                <form onSubmit={handleLogin}>
-                    <h3>Please Login</h3>
-                    <div className="form-floating">
-                        <input
-                            type="email"
-                            className="form-control"
-                            name="email"
-                            value={credentials.email}
-                            onChange={onChange}
-                            placeholder="name@example.com"
-                        />
-                        <label htmlFor="floatingInput">Email address</label>
-                    </div>
+  return (
+    <main className="auth-page" style={{ backgroundImage: `url(${backgroundImage})` }}>
+      <div className="auth-page__overlay">
+        <div className="auth-layout">
+          <section className="auth-intro">
+            <p className="eyebrow">Neighborhood sharing</p>
+            <h1>Borrow the tools you need, right when you need them.</h1>
+            <p>
+              Sign in to browse nearby tools, manage rentals, and keep your own tool shelf available to trusted neighbors.
+            </p>
+          </section>
 
-                    <div className="form-floating">
-                        <input
-                            type="password"
-                            className="form-control"
-                            name="password"
-                            value={credentials.password}
-                            onChange={onChange}
-                            placeholder="Password"
-                        />
-                        <label htmlFor="floatingPassword">Password</label>
-                    </div>
+          <form className="form-panel" onSubmit={handleLogin}>
+            <h2>Welcome back</h2>
+            <p>Use your ToolNet account to continue.</p>
 
-                    <div className="form-check text-start my-3">
-                        <input
-                            className="form-check-input"
-                            type="checkbox"
-                            value="remember-me"
-                            id="flexCheckDefault"
-                        />
-                        <label className="form-check-label" htmlFor="flexCheckDefault">
-                            Remember me
-                        </label>
-                    </div>
+            {error && <div className="status-banner status-banner--error mb-3">{error}</div>}
 
-                    <button className="btn btn-primary w-100 py-2" type="submit">Login</button>
-                    <p className="mt-5 mb-3 text-body-secondary">© 2017–2024</p>
-                </form>
+            <div className="mb-3">
+              <label htmlFor="login-email" className="form-label">Email address</label>
+              <input
+                id="login-email"
+                type="email"
+                className="form-control"
+                name="email"
+                value={credentials.email}
+                onChange={onChange}
+                placeholder="name@example.com"
+                required
+              />
             </div>
+
+            <div className="mb-3">
+              <label htmlFor="login-password" className="form-label">Password</label>
+              <input
+                id="login-password"
+                type="password"
+                className="form-control"
+                name="password"
+                value={credentials.password}
+                onChange={onChange}
+                placeholder="Your password"
+                required
+              />
+            </div>
+
+            <button className="btn btn-primary w-100" type="submit" disabled={loading}>
+              {loading ? 'Signing in...' : 'Login'}
+            </button>
+
+            <p className="mt-3 mb-0 text-center">
+              New to ToolNet? <Link to="/createuser" className="muted-link">Create an account</Link>
+            </p>
+          </form>
         </div>
-    );
-}
+      </div>
+    </main>
+  );
+};
 
 export default Login;

@@ -1,86 +1,67 @@
 import React, { useContext } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { UserContext } from './UserContext';
 import imag from '../components/profile.jpg';
-import {useNavigate} from 'react-router-dom'
-
 
 const Header = () => {
   const { isAuthenticated, logout, currentUserName, currentUserProfileImage } = useContext(UserContext);
-  console.log(currentUserProfileImage);
-
-  const navigate = useNavigate(); // Import useNavigate hook
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();      // Call the logout function from UserContext
-    navigate('/');  // Navigate to the home page after logout
+    logout();
+    navigate('/');
   };
 
+  const navItems = [
+    { label: 'Home', to: '/home' },
+    { label: 'Add Tool', to: '/addtool' },
+    { label: 'My Tools', to: '/mytools' },
+    { label: 'Requests', to: '/requests' },
+    { label: 'Cart', to: '/cart' },
+    { label: 'Orders', to: '/orders' },
+    { label: 'About', to: '/about' },
+  ];
+
   return (
-    <header 
-      className="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 border-bottom" 
-      style={{ 
-          background: 'linear-gradient(to right, #009688, #00796b)' // Teal gradient
-      }}
-    >
-      {/* App name positioned at the left-most side */}
-      <div className="col-md-3 mb-2 mb-md-0 d-flex align-items-center">
-        <a href="/" className="text-decoration-none">
-          <h1 style={{ 
-            color: '#FFFFFF',
-            fontWeight: '600',
-            fontSize: '2.2em',
-            margin: 0,
-            fontFamily: "'Roboto', sans-serif",
-            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
-            letterSpacing: '1px',
-            paddingLeft: '20px'
-          }}>
-            ToolNet
-          </h1>
-        </a>
-      </div>
+    <header className="site-header">
+      <div className="site-header__inner">
+        <Link to={isAuthenticated ? '/home' : '/'} className="brand-mark">
+          <span className="brand-mark__badge">TN</span>
+          <span>ToolNet</span>
+        </Link>
 
-      <ul className="nav col-12 col-md-auto mb-2 justify-content-center mb-md-0">
-        <li><a href="/home" className="nav-link px-2 text-light">Home</a></li>
-        <li><a href="/addtool" className="nav-link px-2 text-light">Add Tool</a></li>
-        <li><a href="/mytools" className="nav-link px-2 text-light">My Tools</a></li>
-        <li><a href="/cart" className="nav-link px-2 text-light">Cart</a></li>
-        <li><a href="/orders" className="nav-link px-2 text-light">Orders</a></li>
-        <li><a href="/about" className="nav-link px-2 text-light">About</a></li>
-      </ul>
+        <nav aria-label="Primary navigation">
+          <ul className="site-nav">
+            {navItems.map((item) => (
+              <li key={item.to}>
+                <NavLink to={item.to}>{item.label}</NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-      <div className="col-md-3 text-end d-flex align-items-center">
-        {isAuthenticated ? (
-          <>
-            <a href="/profile" className="nav-link text-light d-flex align-items-center">
-              {/* Check if profileImage exists, fallback to default image */}
-              <img 
-                src={currentUserProfileImage || imag}  // Use profileImage from context or fallback
-                alt="Profile" 
-                className="rounded-circle me-2" 
-                width="40" 
-                height="40" 
-              />
-              <span>{currentUserName || 'User'}</span> {/* Fallback to 'User' if name is not available */}
-            </a>
-            <button 
-              type="button" 
-              className="btn btn-outline-light ms-3" 
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
-          </>
-        ) : (
-          <>
-            <button type="button" className="btn btn-outline-light me-2">
-              <a href="/" className="nav-link text-light">Login</a>
-            </button>
-            <button type="button" className="btn btn-outline-light me-2">
-              <a href="/createuser" className="nav-link text-light">Sign-up</a>
-            </button>
-          </>
-        )}
+        <div className="header-user">
+          {isAuthenticated ? (
+            <>
+              <Link to="/profile" className="profile-link">
+                <img
+                  src={currentUserProfileImage || imag}
+                  alt=""
+                  className="avatar"
+                />
+                <span>{currentUserName || 'User'}</span>
+              </Link>
+              <button type="button" className="btn btn-soft" onClick={handleLogout}>
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/" className="header-action">Login</Link>
+              <Link to="/createuser" className="btn btn-primary">Sign up</Link>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

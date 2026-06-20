@@ -1,173 +1,197 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import backgroundImage from './background.jpg';
-import { useNavigate } from 'react-router-dom';
 import { UserContext } from './UserContext';
 import imag from '../components/profile.jpg';
 import API_BASE_URL from '../config/api';
 
 const Signup = () => {
-  const [credentials, setCredentials] = useState({ name: "", email: "", password: "", location: "", geolocation: "" });
+  const [credentials, setCredentials] = useState({
+    name: '',
+    email: '',
+    password: '',
+    location: '',
+    geolocation: '',
+  });
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useContext(UserContext);
-  let navigate = useNavigate();
+  const navigate = useNavigate();
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
+  const handleSignup = async (event) => {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
 
-    let lat, long;
-    if (credentials.geolocation) {
+    try {
+      if (!credentials.geolocation) {
+        throw new Error('Add your location before creating an account.');
+      }
+
       const { latitude, longitude } = JSON.parse(credentials.geolocation);
-      lat = latitude;
-      long = longitude;
-    } else {
-      alert("Please provide your geolocation.");
-      return; // Prevent submission if geolocation is not set
-    }
 
-    const response = await fetch(`${API_BASE_URL}/api/createuser`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        name: credentials.name,
-        email: credentials.email,
-        password: credentials.password,
-        location: credentials.location, // Use text location
-        latitude: lat, // Use latitude
-        longitude: long // Use longitude
-      })
-    });
+      const response = await fetch(`${API_BASE_URL}/api/createuser`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: credentials.name,
+          email: credentials.email,
+          password: credentials.password,
+          location: credentials.location,
+          latitude,
+          longitude,
+        }),
+      });
 
-    const json = await response.json();
-    console.log(json);
-    if (!json.success) {
-      alert("Enter valid credentials");
+      const json = await response.json();
+
+      if (!response.ok || !json.success) {
+        throw new Error(json.message || 'Unable to create account.');
+      }
+
+      login(json.userId, credentials.email, credentials.name, imag, latitude, longitude);
+      navigate('/home');
+    } catch (err) {
+      setError(err.message || 'Unable to create account. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    if (json.success) {
-      login(json.userId,credentials.email,credentials.name,imag,lat,long);
-      navigate("/home");
-    }
-  }
+  };
 
   const onChange = (event) => {
     setCredentials({ ...credentials, [event.target.name]: event.target.value });
-  }
+  };
 
   const getGeolocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const latitude = position.coords.latitude;
-          const longitude = position.coords.longitude;
-          setCredentials({
-            ...credentials,
-            geolocation: JSON.stringify({ latitude, longitude }) // Store as a JSON string
-          });
-        },
-        (error) => {
-          console.error("Error getting location: ", error);
-          alert("Unable to retrieve your location. Please provide it manually.");
-        }
-      );
-    } else {
-      alert("Geolocation is not supported by this browser.");
+    setStatus('');
+    setError('');
+
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by this browser.');
+      return;
     }
-  }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        setCredentials({
+          ...credentials,
+          geolocation: JSON.stringify({ latitude, longitude }),
+        });
+        setStatus('Location added.');
+      },
+      () => {
+        setError('Unable to retrieve your location. Please enter it manually later.');
+      }
+    );
+  };
 
   return (
-    <div style={{
-      backgroundImage: `url(${backgroundImage})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      height: '100vh',
-      width: '100%',
-    }}>
-      <div className="vh-100 d-flex justify-content-center align-items-center">
-        <form onSubmit={handleSignup}>
-          <h3>Create account</h3>
-          <div className="form-floating">
-            <input
-              type="text"
-              className="form-control"
-              name="name"
-              value={credentials.name}
-              onChange={onChange}
-              placeholder="name"
-            />
-            <label htmlFor="location">Name</label>
-          </div>
-          <div className="form-floating">
-            <input
-              type="email"
-              className="form-control"
-              name="email"
-              value={credentials.email}
-              onChange={onChange}
-              placeholder="name@example.com"
-            />
-            <label htmlFor="floatingInput">Email address</label>
-          </div>
+    <main className="auth-page" style={{ backgroundImage: `url(${backgroundImage})` }}>
+      <div className="auth-page__overlay">
+        <div className="auth-layout">
+          <section className="auth-intro">
+            <p className="eyebrow">Start sharing</p>
+            <h1>Create your local tool-sharing profile.</h1>
+            <p>
+              Add your location so ToolNet can surface nearby tools and keep your rentals focused around your neighborhood.
+            </p>
+          </section>
 
-          <div className="form-floating">
-            <input
-              type="password"
-              className="form-control"
-              name="password"
-              value={credentials.password}
-              onChange={onChange}
-              placeholder="Password"
-            />
-            <label htmlFor="floatingPassword">Password</label>
-          </div>
+          <form className="form-panel" onSubmit={handleSignup}>
+            <h2>Create account</h2>
+            <p>Join ToolNet and start browsing tools near you.</p>
 
-          <div className="form-floating">
-            <input
-              type="text"
-              className="form-control"
-              name="location"
-              value={credentials.location}
-              onChange={onChange}
-              placeholder="Your Address"
-            />
-            <label htmlFor="floatingLocation">Address</label>
-          </div>
+            {status && <div className="status-banner status-banner--success mb-3">{status}</div>}
+            {error && <div className="status-banner status-banner--error mb-3">{error}</div>}
 
-          <div className="form-floating">
-            <button type="button" className="btn btn-secondary" onClick={getGeolocation}>
-              Get My Location
+            <div className="mb-3">
+              <label htmlFor="signup-name" className="form-label">Name</label>
+              <input
+                id="signup-name"
+                type="text"
+                className="form-control"
+                name="name"
+                value={credentials.name}
+                onChange={onChange}
+                placeholder="Your full name"
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label htmlFor="signup-email" className="form-label">Email address</label>
+              <input
+                id="signup-email"
+                type="email"
+                className="form-control"
+                name="email"
+                value={credentials.email}
+                onChange={onChange}
+                placeholder="name@example.com"
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label htmlFor="signup-password" className="form-label">Password</label>
+              <input
+                id="signup-password"
+                type="password"
+                className="form-control"
+                name="password"
+                value={credentials.password}
+                onChange={onChange}
+                placeholder="Create a password"
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label htmlFor="signup-location" className="form-label">Address</label>
+              <input
+                id="signup-location"
+                type="text"
+                className="form-control"
+                name="location"
+                value={credentials.location}
+                onChange={onChange}
+                placeholder="Your neighborhood or address"
+                required
+              />
+            </div>
+
+            <div className="d-grid gap-2 mb-3">
+              <button type="button" className="btn btn-soft" onClick={getGeolocation}>
+                Use current location
+              </button>
+              {credentials.geolocation && (
+                <input
+                  className="form-control"
+                  name="geolocation"
+                  value={credentials.geolocation}
+                  readOnly
+                  aria-label="Captured geolocation"
+                />
+              )}
+            </div>
+
+            <button className="btn btn-primary w-100" type="submit" disabled={loading}>
+              {loading ? 'Creating account...' : 'Sign up'}
             </button>
-            <small className="form-text">Click the button to retrieve your location.</small>
-          </div>
 
-          <div className="form-floating">
-            <input
-              type="text"
-              className="form-control"
-              name="geolocation"
-              value={credentials.geolocation}
-              readOnly // Set readOnly as the value is set automatically
-            />
-            <label htmlFor="floatingGeolocation">Geolocation (Latitude, Longitude)</label>
-          </div>
-
-          <div className="form-check text-start my-3">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              value="remember-me"
-              id="flexCheckDefault"
-            />
-            <label className="form-check-label" htmlFor="flexCheckDefault">
-              Remember me
-            </label>
-          </div>
-
-          <button className="btn btn-primary w-100 py-2" type="submit">Sign-up</button>
-          <p className="mt-5 mb-3 text-body-secondary">© 2017–2024</p>
-        </form>
+            <p className="mt-3 mb-0 text-center">
+              Already have an account? <Link to="/" className="muted-link">Login</Link>
+            </p>
+          </form>
+        </div>
       </div>
-    </div>
+    </main>
   );
-}
+};
 
 export default Signup;

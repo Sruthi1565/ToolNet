@@ -1,163 +1,204 @@
-import React, { useState, useEffect, useContext } from "react";
-import Card from "../components/Card"; 
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import Card from '../components/Card';
 import toolImage1 from '../components/img1.jpg';
 import toolImage2 from '../components/bg2.jpg';
 import toolImage3 from '../components/img1.jpg';
-import { UserContext } from "../components/UserContext";
-import API_BASE_URL from "../config/api";
+import { UserContext } from '../components/UserContext';
+import API_BASE_URL from '../config/api';
+
+const heroImages = [toolImage1, toolImage2, toolImage3];
 
 export default function Home() {
-    const [search, setSearch] = useState('');
-    const [tools, setTools] = useState([]);
-    const [error, setError] = useState(null);
-    const [message, setMessage] = useState('');
-    const { currentUserId, userLatitude, userLongitude } = useContext(UserContext);
+  const [search, setSearch] = useState('');
+  const [tools, setTools] = useState([]);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [rentingToolId, setRentingToolId] = useState('');
+  const [rentStatus, setRentStatus] = useState(null);
+  const { currentUserId, userLatitude, userLongitude } = useContext(UserContext);
 
-    // Loading state to handle fetching tools
-    const [loading, setLoading] = useState(true); // Add loading state
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroIndex((current) => (current + 1) % heroImages.length);
+    }, 4500);
 
-    // Fetch the tools when the component loads
-    useEffect(() => {
-        const fetchTools = async () => {
-            if (!userLatitude || !userLongitude) {
-                setLoading(false);
-                return;
-            }
+    return () => clearInterval(timer);
+  }, []);
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/browsetools?latitude=${userLatitude}&longitude=${userLongitude}`);
-                if (!response.ok) throw new Error("Network response was not ok");
-                const data = await response.json();
+  useEffect(() => {
+    const fetchTools = async () => {
+      if (!userLatitude || !userLongitude) {
+        setLoading(false);
+        setMessage('Add your location to see tools nearby.');
+        return;
+      }
 
-                // Filter out tools belonging to the current user
-                const filteredTools = data.filter(tool => tool.owner_id !== currentUserId);
-                setTools(filteredTools);
+      setLoading(true);
+      setError('');
 
-                if (filteredTools.length === 0) {
-                    setMessage("No tools in your neighborhood.");
-                } else {
-                    setMessage("Tools in your neighborhood!");
-                }
-            } catch (error) {
-                setError(error.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchTools();
-    }, [userLatitude, userLongitude, currentUserId]);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/browsetools?latitude=${userLatitude}&longitude=${userLongitude}`);
 
-    if (loading) return <div>Loading tools...</div>;
-    if (error) return <div>Error: {error}</div>;
-
-    const handleRent = async (tool, rentalDays) => {
-        if (!currentUserId) {
-            alert("User ID is missing. Please log in.");
-            return;
+        if (response.status === 404) {
+          setTools([]);
+          setMessage('No tools are currently listed near you.');
+          return;
         }
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/rent`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    toolId: tool._id,
-                    userId: currentUserId,
-                    rentalDays: rentalDays,
-                    cost: tool.rental_price * rentalDays
-                }),
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error("Detailed error info:", errorData);
-                throw new Error("Failed to rent tool");
-            } else {
-                alert("Tool added to cart");
-            }
-
-            const result = await response.json();
-            setMessage(result.message);
-        } catch (err) {
-            setError(`Error: ${err.message}`);
+        if (!response.ok) {
+          throw new Error('Unable to load tools right now.');
         }
+
+        const data = await response.json();
+        const filteredTools = data.filter((tool) => tool.owner_id !== currentUserId);
+        setTools(filteredTools);
+        setMessage(filteredTools.length ? 'Tools available in your neighborhood.' : 'No tools are currently listed near you.');
+      } catch (fetchError) {
+        setError(fetchError.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const groupedTools = tools.reduce((acc, tool) => {
-        if (!acc[tool.category]) {
-            acc[tool.category] = [];
-        }
-        acc[tool.category].push(tool);
-        return acc;
-    }, {});
+    fetchTools();
+  }, [userLatitude, userLongitude, currentUserId]);
 
-    return (
-        <div>
-            <div>
-                {/* Carousel with search input */}
-                <div id="carouselExampleControls" className="carousel slide" data-bs-ride="carousel" style={{ objectFit: "contain !important" }}>
-                    <div className="carousel-inner" id="carousel">
-                        <div className='carousel-caption' style={{ zIndex: "10" }}>
-                            <div className="d-flex justify-content-center">
-                                <input 
-                                    className="form-control me-2" 
-                                    type="search" 
-                                    placeholder="Search" 
-                                    aria-label="Search" 
-                                    value={search} 
-                                    onChange={(e) => {
-                                        setSearch(e.target.value);
-                                        setMessage('');
-                                    }} 
-                                />
-                            </div>
-                        </div>
-                        <div className="carousel-item active">
-                            <img src={toolImage1} style={{ height: "500px", width: "100%", filter: "brightness(50%)" }} className="d-block w-100" alt="Tool 1" />
-                        </div>
-                        <div className="carousel-item">
-                            <img src={toolImage2} style={{ height: "500px", width: "100%", filter: "brightness(50%)" }} className="d-block w-100" alt="Tool 2" />
-                        </div>
-                        <div className="carousel-item">
-                            <img src={toolImage3} style={{ height: "500px", width: "100%", filter: "brightness(50%)" }} className="d-block w-100" alt="Tool 3" />
-                        </div>
-                    </div>
-                    <button className="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="prev">
-                        <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span className="visually-hidden">Previous</span>
-                    </button>
-                    <button className="carousel-control-next" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="next">
-                        <span className="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span className="visually-hidden">Next</span>
-                    </button>
-                </div>
-            </div>
+  const handleRent = async (tool, rentalDays) => {
+    if (!currentUserId) {
+      const loginMessage = 'Please login before renting a tool.';
+      setError(loginMessage);
+      setRentStatus({ toolId: tool._id, type: 'error', message: loginMessage });
+      return;
+    }
 
-            {/* Display categories and their tools */}
-            <div className="mt-4">
-                {message && <div className="alert alert-info">{message}</div>}
-                
-                {Object.keys(groupedTools).length > 0 ? (
-                    Object.keys(groupedTools).map(category => (
-                        <div key={category} className="category-section mb-5">
-                            <h2>{category}</h2>
-                            <div className="d-flex flex-wrap justify-content-center">
-                                {groupedTools[category].filter(tool => 
-                                    tool.name.toLowerCase().includes(search.toLowerCase()) || 
-                                    tool.category.toLowerCase().includes(search.toLowerCase())
-                                ).map(tool => (
-                                    <div className="m-4" key={tool._id}>
-                                        <Card tool={tool} onRent={handleRent} />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="alert alert-warning">No tools available in your neighborhood.</div>
-                )}
-            </div>
+    setRentingToolId(tool._id);
+    setRentStatus({ toolId: tool._id, type: 'info', message: 'Adding this tool to your cart...' });
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/rent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          toolId: tool._id,
+          userId: currentUserId,
+          rentalDays,
+          cost: Number(tool.rental_price) * rentalDays,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to add this tool to your cart.');
+      }
+
+      const successMessage = response.status === 200
+        ? `${tool.name} updated in your cart.`
+        : `${tool.name} added to your cart.`;
+      setMessage(successMessage);
+      setRentStatus({ toolId: tool._id, type: 'success', message: successMessage });
+    } catch (rentError) {
+      const errorMessage = rentError.message || 'Failed to add this tool to your cart.';
+      setError(errorMessage);
+      setRentStatus({ toolId: tool._id, type: 'error', message: errorMessage });
+    } finally {
+      setRentingToolId('');
+    }
+  };
+
+  const filteredTools = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return tools;
+
+    return tools.filter((tool) => (
+      tool.name?.toLowerCase().includes(term)
+      || tool.category?.toLowerCase().includes(term)
+      || tool.location?.toLowerCase().includes(term)
+    ));
+  }, [tools, search]);
+
+  const groupedTools = filteredTools.reduce((acc, tool) => {
+    const category = tool.category || 'Other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(tool);
+    return acc;
+  }, {});
+
+  return (
+    <>
+      <section className="hero">
+        {heroImages.map((image, index) => (
+          <div className={`hero__slide ${index === heroIndex ? 'active' : ''}`} key={image}>
+            <img src={image} alt="" />
+          </div>
+        ))}
+
+        <div className="hero__content">
+          <p className="eyebrow">ToolNet marketplace</p>
+          <h1 className="hero__title">Find practical tools from people nearby.</h1>
+          <p className="hero__copy">
+            Browse community listings, rent what you need for a few days, and keep your own tools working for neighbors.
+          </p>
+          <div className="hero-search">
+            <input
+              type="search"
+              placeholder="Search by tool, category, or location"
+              aria-label="Search tools"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
         </div>
-    );
+      </section>
+
+      <main className="page">
+        <div className="page-header">
+          <p className="eyebrow">Browse</p>
+          <h2 className="section-title">Available tools</h2>
+          {message && <div className="status-banner status-banner--success">{message}</div>}
+          {error && <div className="status-banner status-banner--error mt-3">{error}</div>}
+        </div>
+
+        {loading ? (
+          <div className="empty-state">
+            <h2>Loading tools...</h2>
+            <p>Checking nearby listings.</p>
+          </div>
+        ) : Object.keys(groupedTools).length > 0 ? (
+          Object.keys(groupedTools).map((category) => (
+            <section key={category} className="category-block">
+              <div className="category-block__header">
+                <h2 className="section-title mb-0">{category.replace('_', ' ')}</h2>
+                <span className="badge-soft">{groupedTools[category].length} listed</span>
+              </div>
+              <div className="tool-grid">
+                {groupedTools[category].map((tool) => (
+                  <Card
+                    key={tool._id}
+                    tool={tool}
+                    onRent={handleRent}
+                    isRenting={rentingToolId === tool._id}
+                    rentStatus={rentStatus?.toolId === tool._id ? rentStatus : null}
+                  />
+                ))}
+              </div>
+            </section>
+          ))
+        ) : (
+          <div className="empty-state">
+            <h2>No matching tools</h2>
+            <p>Try another search term or check back later.</p>
+          </div>
+        )}
+      </main>
+    </>
+  );
 }

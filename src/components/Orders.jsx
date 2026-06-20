@@ -1,88 +1,144 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { UserContext } from '../components/UserContext'; // Adjust the path as necessary
-import { format } from 'date-fns'; // Optional: For better date formatting
+import React, { useContext, useEffect, useState } from 'react';
+import { format } from 'date-fns';
+import { UserContext } from '../components/UserContext';
 import API_BASE_URL from '../config/api';
 
+const getReadableOrderNumber = (orderId) => {
+  if (!orderId) return 'Order';
+  return `#${orderId.slice(-6).toUpperCase()}`;
+};
+
+const formatOrderDate = (date) => {
+  if (!date) return 'N/A';
+  return format(new Date(date), 'MMM dd, yyyy');
+};
+
+const getOrderDisplayStatus = (order) => {
+  const rawStatus = order.status?.trim();
+  const normalizedStatus = rawStatus?.toLowerCase();
+  const rentalEndDate = order.rentalEndDate ? new Date(order.rentalEndDate) : null;
+  const rentalHasEnded = rentalEndDate && !Number.isNaN(rentalEndDate.getTime()) && rentalEndDate < new Date();
+  const statusLabels = {
+    requested: 'Waiting for owner response',
+    active: 'Accepted - coordinate delivery',
+    declined: 'Declined',
+    completed: 'Completed',
+  };
+
+  if (normalizedStatus === 'active' && rentalHasEnded) return 'Rental period ended';
+  if (normalizedStatus && statusLabels[normalizedStatus]) return statusLabels[normalizedStatus];
+  if (rentalHasEnded) return 'Rental period ended';
+  if (rawStatus && normalizedStatus !== 'pending') return rawStatus;
+  return 'Waiting for owner response';
+};
+
 const Orders = () => {
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const { currentUserId } = useContext(UserContext); 
-    // Get the current user's ID
-    
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                console.log('Fetching orders for user ID:', currentUserId);
-                const response = await fetch(`${API_BASE_URL}/api/orders/${currentUserId}`);
-                console.log('Response:', response); // Log the response object
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                console.log('Fetched data:', data); // Log the fetched data
-                setOrders(data);
-            } catch (err) {
-                console.log('Error fetching orders:', err); // Log the error
-                setError(' Failed to fetch orders. Please try again later.');
-            } finally {
-                setLoading(false);
-            }
-        };
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const { currentUserId } = useContext(UserContext);
 
-        console.log('Current User ID:', currentUserId); // Log the current user ID
-        if (currentUserId) { // Fetch only if user ID is valid
-            fetchOrders(); // Fetch orders when the component mounts
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!currentUserId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/orders/${currentUserId}`);
+        if (!response.ok) {
+          throw new Error(`Unable to load orders. Status: ${response.status}`);
         }
-    }, [currentUserId]);
+        const data = await response.json();
+        setOrders(data);
+      } catch (fetchError) {
+        setError(fetchError.message || 'Failed to fetch orders. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (!currentUserId) {
-        return <p className="text-center mt-5">Please log in to view your orders.</p>;
-    }
-    if (loading) return <div className="alert alert-info">Loading...</div>;
-    if (error) return <div className="alert alert-danger">Error: {error}</div>;
+    fetchOrders();
+  }, [currentUserId]);
 
-    console.log('Orders:', orders); // Log the orders after state is set
-
+  if (!currentUserId) {
     return (
-        <div className="container mt-5">
-            <h1 className="text-center mb-4 text-primary">Your Orders</h1>
-            {orders.length === 0 ? (
-                <p className="text-center text-warning">No orders found.</p>
-            ) : (
-                <div className="row">
-                    {orders.map(order => (
-                        <div key={order._id} className="col-md-6 mb-4">
-                            <div className="card shadow-sm border-primary">
-                                <div className="card-body">
-                                    <h5 className="card-title text-success">Order ID: {order._id}</h5>
-                                    <h6 className="card-subtitle mb-2 text-muted">Status: {order.status}</h6>
-                                    <p className="card-text">Total Cost: <strong>₹{order.totalCost}</strong></p>
-                                    <p className="card-text">Rented At: {format(new Date(order.createdAt), 'MMMM dd, yyyy h:mm a')}</p>
-                                    
-                                    {/* Check if rentalEndDate is valid before formatting */}
-                                    <p className="card-text">
-                                        Rental End Date: {order.rentalEndDate ? format(new Date(order.rentalEndDate), 'MMMM dd, yyyy') : 'N/A'}
-                                    </p>
-
-                                    <h6 className="text-secondary">Items:</h6>
-                                    <ul className="list-group list-group-flush">
-                                        {order.cartItems.map(item => (
-                                            <li key={item.toolId} className="list-group-item">
-                                                <strong>{item.toolName}</strong>
-                                                <p className="mb-0">Rental Days: {item.rentalDays}</p>
-                                                <p className="mb-0">Cost: <strong>₹{item.cost}</strong></p>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+      <main className="page page--narrow">
+        <div className="empty-state">
+          <h2>Login required</h2>
+          <p>Please login to view your orders.</p>
         </div>
+      </main>
     );
+  }
+
+  return (
+    <main className="page">
+      <div className="page-header">
+        <p className="eyebrow">Rental history</p>
+        <h1 className="page-title">Orders</h1>
+        <p className="page-copy">Review active rentals, costs, dates, and the tools included in each order.</p>
+      </div>
+
+      {loading && <div className="status-banner">Loading orders...</div>}
+      {error && <div className="status-banner status-banner--error">Error: {error}</div>}
+
+      {!loading && !error && orders.length === 0 && (
+        <div className="empty-state">
+          <h2>No orders found</h2>
+          <p>Your completed rentals will appear here.</p>
+        </div>
+      )}
+
+      {!loading && !error && orders.length > 0 && (
+        <div className="order-grid">
+          {orders.map((order) => (
+            <article key={order._id} className="panel-card">
+              <div className="panel-card__body">
+                <div className="d-flex align-items-start justify-content-between gap-3 mb-3">
+                  <div>
+                    <p className="eyebrow mb-1">Order</p>
+                    <h2 className="section-title mb-0">Order {getReadableOrderNumber(order._id)}</h2>
+                    <p className="order-reference">Reference ID: {order._id}</p>
+                  </div>
+                  <span className="badge-soft">{getOrderDisplayStatus(order)}</span>
+                </div>
+
+                <div className="meta-list">
+                  <div className="meta-row">
+                    <span>Total cost</span>
+                    <strong>₹{order.totalCost}</strong>
+                  </div>
+                  <div className="meta-row">
+                    <span>Rented at</span>
+                    <strong>{formatOrderDate(order.createdAt)}</strong>
+                  </div>
+                  <div className="meta-row">
+                    <span>Rental ends</span>
+                    <strong>{formatOrderDate(order.rentalEndDate)}</strong>
+                  </div>
+                </div>
+
+                <h3 className="section-title">Items</h3>
+                <ul className="order-items">
+                  {order.cartItems.map((item) => (
+                    <li key={item.toolId}>
+                      <strong>{item.toolName}</strong>
+                      <div className="meta-row mt-2">
+                        <span>{item.rentalDays} day{item.rentalDays > 1 ? 's' : ''}</span>
+                        <strong>₹{item.cost}</strong>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </main>
+  );
 };
 
 export default Orders;

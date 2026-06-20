@@ -22,7 +22,7 @@ router.get('/browsetools', async (req, res) => {
         const userLongitude = parseFloat(req.query.longitude);
         const proximity = 10; // 10 km proximity
 
-        const tools = await Tool.find();
+        const tools = await Tool.find({ availability: true });
 
         // Filter tools by distance
         const neighborhoodTools = tools.filter(tool => {

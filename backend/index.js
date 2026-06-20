@@ -11,7 +11,7 @@ const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
 app.use(cors({
     origin: clientUrl, // Allow requests from the configured frontend
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allow these methods
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // Allow these methods
     allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
   }));
 
@@ -36,6 +36,7 @@ app.use('/api',require("./Routes/CreateTool"));
 app.use('/api',require("./Routes/Rent"));
 app.use('/api',require("./Routes/CheckOut"));
 app.use('/api/orders',require("./Routes/Orders"));
+app.use('/api/requests',require("./Routes/Requests"));
 app.use('/api',require("./Routes/MyTools"));
 app.use('/api',require("./Routes/UpdateProfile"));
 const startServer = () => {
