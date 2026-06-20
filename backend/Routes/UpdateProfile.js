@@ -27,7 +27,8 @@ router.put('/update-profile', upload.single('profileImage'), async (req, res) =>
 
   if (req.file) {
     // Generate the full URL to access the profile image
-    profileImage = `http://localhost:5000/${path.join('uploads', req.file.filename).replace(/\\/g, '/')}`;
+    const baseUrl = process.env.SERVER_URL || `${req.protocol}://${req.get('host')}`;
+    profileImage = `${baseUrl}/${path.join('uploads', req.file.filename).replace(/\\/g, '/')}`;
   }
 
   try {

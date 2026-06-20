@@ -3,6 +3,7 @@ import backgroundImage from './background.jpg';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from './UserContext';
 import imag from '../components/profile.jpg';
+import API_BASE_URL from '../config/api';
 
 const Signup = () => {
   const [credentials, setCredentials] = useState({ name: "", email: "", password: "", location: "", geolocation: "" });
@@ -22,7 +23,7 @@ const Signup = () => {
       return; // Prevent submission if geolocation is not set
     }
 
-    const response = await fetch("http://localhost:5000/api/createuser", {
+    const response = await fetch(`${API_BASE_URL}/api/createuser`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

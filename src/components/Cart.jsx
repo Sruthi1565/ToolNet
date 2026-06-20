@@ -3,6 +3,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { CartContext } from './CartContext';
 import { UserContext } from '../components/UserContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import API_BASE_URL from '../config/api';
 
 const Cart = () => {
   const { cart, dispatch } = useContext(CartContext);
@@ -21,7 +22,7 @@ const Cart = () => {
     
     try {
       // First, checkout the cart
-      const response = await fetch('http://localhost:5000/api/checkout', {
+      const response = await fetch(`${API_BASE_URL}/api/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -39,7 +40,7 @@ const Cart = () => {
   
       // Then, delete each item from the database
       await Promise.all(cart.map(item => 
-        fetch(`http://localhost:5000/api/remove/${item._id}`, { method: 'DELETE' })
+        fetch(`${API_BASE_URL}/api/remove/${item._id}`, { method: 'DELETE' })
       ));
   
       // Clear the cart in context after deletion
@@ -56,7 +57,7 @@ const Cart = () => {
     const fetchRentals = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`http://localhost:5000/api/cart/${currentUserId}`);
+        const response = await fetch(`${API_BASE_URL}/api/cart/${currentUserId}`);
         if (!response.ok) throw new Error('Failed to load cart');
         const data = await response.json();
         console.log(data);
@@ -73,7 +74,7 @@ const Cart = () => {
 
   const handleRemove = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/remove/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/api/remove/${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to remove item');
       dispatch({ type: 'REMOVE_RENTAL', payload: id });
     } catch (error) {
@@ -88,7 +89,7 @@ const Cart = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/update/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/update/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rentalDays }),

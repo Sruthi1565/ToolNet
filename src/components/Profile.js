@@ -1,12 +1,11 @@
 import React, { useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import { UserContext } from './UserContext';
 import imag from '../components/profile.jpg';
+import API_BASE_URL from '../config/api';
 
 const Profile = () => {
   const { currentUserId, currentUserName, currentUserEmail, login } = useContext(UserContext);
-  const navigate = useNavigate();
 
   const [updatedName, setUpdatedName] = useState(currentUserName || '');
   const [updatedBio, setUpdatedBio] = useState('');
@@ -54,7 +53,7 @@ const Profile = () => {
 
         console.log('Form data prepared:', formData);
 
-        const response = await axios.put('http://localhost:5000/api/update-profile', formData, {
+        const response = await axios.put(`${API_BASE_URL}/api/update-profile`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },

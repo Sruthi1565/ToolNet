@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import API_BASE_URL from '../config/api';
 
 const Card = ({ tool, onRent }) => {
     const [rentalDays, setRentalDays] = useState(1); // Default to 1 day
@@ -9,9 +10,6 @@ const Card = ({ tool, onRent }) => {
             onRent(tool, rentalDays); // Pass the selected days to the onRent function
         }
     };
-
-    // Base URL for backend
-    const BASE_URL = 'http://localhost:5000'; // Replace with your server URL
 
     return (
         <div
@@ -26,7 +24,7 @@ const Card = ({ tool, onRent }) => {
             <img
                 src={
                     tool.image 
-                        ? `${BASE_URL}${tool.image}` // Prepend server URL to the image path
+                        ? `${API_BASE_URL}${tool.image}` // Prepend server URL to the image path
                         : 'https://via.placeholder.com/300x200'
                 }
                 className="card-img-top"

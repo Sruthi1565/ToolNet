@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap CSS
 import backgroundImage from './background.jpg';
 import { UserContext } from './UserContext';
+import API_BASE_URL from '../config/api';
 
 function AddTool() {
     const { currentUserId } = useContext(UserContext);
@@ -86,7 +87,7 @@ function AddTool() {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/addtool', {
+            const response = await fetch(`${API_BASE_URL}/api/addtool`, {
                 method: 'POST',
                 body: data, // Send FormData object
             });

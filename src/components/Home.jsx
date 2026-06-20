@@ -4,6 +4,7 @@ import toolImage1 from '../components/img1.jpg';
 import toolImage2 from '../components/bg2.jpg';
 import toolImage3 from '../components/img1.jpg';
 import { UserContext } from "../components/UserContext";
+import API_BASE_URL from "../config/api";
 
 export default function Home() {
     const [search, setSearch] = useState('');
@@ -24,7 +25,7 @@ export default function Home() {
             }
 
             try {
-                const response = await fetch(`http://localhost:5000/api/browsetools?latitude=${userLatitude}&longitude=${userLongitude}`);
+                const response = await fetch(`${API_BASE_URL}/api/browsetools?latitude=${userLatitude}&longitude=${userLongitude}`);
                 if (!response.ok) throw new Error("Network response was not ok");
                 const data = await response.json();
 
@@ -56,7 +57,7 @@ export default function Home() {
         }
 
         try {
-            const response = await fetch("http://localhost:5000/api/rent", {
+            const response = await fetch(`${API_BASE_URL}/api/rent`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

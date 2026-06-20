@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { UserContext } from './UserContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import API_BASE_URL from '../config/api';
 
 const MyTools = () => {
     const { currentUserId } = useContext(UserContext); // get the user ID from UserContext
@@ -10,7 +11,7 @@ const MyTools = () => {
     useEffect(() => {
         const fetchMyTools = async () => {
             try {
-                const response = await fetch(`http://localhost:5000/api/tools?owner_id=${currentUserId}`);
+                const response = await fetch(`${API_BASE_URL}/api/tools?owner_id=${currentUserId}`);
                 const data = await response.json();
                 setTools(data);
             } catch (error) {

@@ -5,7 +5,7 @@ import {useNavigate} from 'react-router-dom'
 
 
 const Header = () => {
-  const { isAuthenticated, logout, currentUserName, currentUserEmail, currentUserProfileImage } = useContext(UserContext);
+  const { isAuthenticated, logout, currentUserName, currentUserProfileImage } = useContext(UserContext);
   console.log(currentUserProfileImage);
 
   const navigate = useNavigate(); // Import useNavigate hook

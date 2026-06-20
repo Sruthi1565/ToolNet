@@ -1,15 +1,16 @@
-const mongoose=require('mongoose');
-mongoURI='mongodb+srv://sru15:tool1234@cluster0.zvell.mongodb.net/toolbank?'
-
+const mongoose = require('mongoose');
 
 const mongoDB = async () => {
+  const mongoURI = process.env.MONGO_URI;
+
+  if (!mongoURI) {
+    console.error('Error: MONGO_URI is not defined');
+    process.exit(1);
+  }
+
   try {
-    await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    await mongoose.connect(mongoURI);
     console.log('MongoDB connected successfully');
-    const fetched_data=await mongoose.connection.db.collection("");
   } catch (error) {
     console.error('Error connecting to MongoDB:', error);
     process.exit(1); 

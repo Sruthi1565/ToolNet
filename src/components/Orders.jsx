@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { UserContext } from '../components/UserContext'; // Adjust the path as necessary
 import { format } from 'date-fns'; // Optional: For better date formatting
+import API_BASE_URL from '../config/api';
 
 const Orders = () => {
     const [orders, setOrders] = useState([]);
@@ -9,26 +10,26 @@ const Orders = () => {
     const { currentUserId } = useContext(UserContext); 
     // Get the current user's ID
     
-    const fetchOrders = async () => {
-        try {
-            console.log('Fetching orders for user ID:', currentUserId);
-            const response = await fetch(`http://localhost:5000/api/orders/${currentUserId}`);
-            console.log('Response:', response); // Log the response object
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            console.log('Fetched data:', data); // Log the fetched data
-            setOrders(data);
-        } catch (err) {
-            console.log('Error fetching orders:', err); // Log the error
-            setError(' Failed to fetch orders. Please try again later.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                console.log('Fetching orders for user ID:', currentUserId);
+                const response = await fetch(`${API_BASE_URL}/api/orders/${currentUserId}`);
+                console.log('Response:', response); // Log the response object
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Fetched data:', data); // Log the fetched data
+                setOrders(data);
+            } catch (err) {
+                console.log('Error fetching orders:', err); // Log the error
+                setError(' Failed to fetch orders. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
         console.log('Current User ID:', currentUserId); // Log the current user ID
         if (currentUserId) { // Fetch only if user ID is valid
             fetchOrders(); // Fetch orders when the component mounts
