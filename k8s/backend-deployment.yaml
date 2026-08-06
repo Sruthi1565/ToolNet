@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: toolnet-backend
+  template: 
+    metadata:
+      labels:
+        app: toolnet-backend
+    spec:
+      containers:
+        - name: backend
+          image: toolnet-backend:v2
+          ports:
+            - containerPort: 5000
+
+          envFrom:
+            - configMapRef:
+                name: toolnet-config
+
+            - secretRef:
+                name: toolnet-secrets        
+  
+    

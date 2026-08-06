@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: toolnet-frontend
+  template:
+    metadata:
+      labels:
+        app: toolnet-frontend
+    spec:
+      containers:
+        - name: toolnet-frontend
+          image: toolnet-frontend:latest
+
+          ports:
+           - containerPort: 3000
